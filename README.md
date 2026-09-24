@@ -1,4 +1,4 @@
-# CRUD Server Project
+# Superior Base
 
 This is a backend server project built with Node.js and Express using a local SQLite database (via `better-sqlite3`). It is designed to be easy to run locally on your machine with absolutely zero setup needed.
 
