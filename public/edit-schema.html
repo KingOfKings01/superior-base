@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Table Schema</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f7fafc; color: #1a202c; margin: 0; padding: 40px 20px; }
+    h1 { margin-top: 0; color: #2d3748; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #4a5568; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+    .btn { padding: 10px 20px; background-color: #ed8936; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 16px; }
+    .btn:hover { background-color: #dd6b20; }
+    .btn-secondary { background-color: #e2e8f0; color: #4a5568; margin-right: 10px; text-decoration: none; display: inline-block; }
+    .btn-secondary:hover { background-color: #cbd5e0; }
+    .column-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .default-cols { background: #edf2f7; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #718096; }
+    .readonly-input { background-color: #f7fafc; color: #a0aec0; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Edit Schema: <span id="tableNameDisplay"></span></h1>
+    
+    <div class="default-cols">
+      <strong>Locked System Columns:</strong> id, userId, createdAt, updatedAt<br>
+      <span style="color: #4a5568; margin-top: 5px; display: inline-block;">
+        <strong>⚠️ WARNING:</strong> Editing Data Types performs a SQLite Schema Migration. We will safely duplicate your data into a new table and replace the old one.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>Custom Columns</label>
+      <div id="columns-container">
+        <p>Loading schema...</p>
+      </div>
+      <button class="btn btn-secondary" style="margin-top: 10px; padding: 5px 15px; font-size: 14px;" onclick="addNewColumn()">+ Add Column</button>
+    </div>
+
+    <div style="margin-top: 30px;">
+      <a href="/admin" class="btn btn-secondary">Cancel</a>
+      <button class="btn" onclick="submitSchema()">Apply Migration</button>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      window.location.href = '/admin-login';
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableName = urlParams.get('table');
+    
+    if (!tableName || tableName === 'Admin') {
+      window.location.href = '/admin';
+    }
+
+    document.getElementById('tableNameDisplay').textContent = tableName;
+
+    let existingTables = [];
+    let tableData = null;
+
+    async function fetchData() {
+      // Fetch available tables for Relations dropdown
+      const tablesRes = await fetch('/admin-api/tables', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (tablesRes.ok) existingTables = await tablesRes.json();
+
+      // Fetch schema for current table
+      const schemaRes = await fetch(`/admin-api/data/${tableName}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (schemaRes.ok) {
+        tableData = await schemaRes.json();
+        renderColumns();
+      } else {
+        document.getElementById('columns-container').innerHTML = '<p style="color: red;">Failed to load schema.</p>';
+      }
+    }
+
+    function generateTypeOptions(currentType, isRelation, relTable) {
+      let optionsHtml = `
+        <optgroup label="Standard Types">
+          <option value="VARCHAR" ${currentType === 'VARCHAR' ? 'selected' : ''}>String (Short Text)</option>
+          <option value="TEXT" ${currentType === 'TEXT' ? 'selected' : ''}>Textarea (Long Text)</option>
+          <option value="INTEGER" ${currentType === 'INTEGER' ? 'selected' : ''}>Integer (Whole Number)</option>
+          <option value="REAL" ${currentType === 'REAL' ? 'selected' : ''}>Decimal (Float)</option>
+          <option value="BOOLEAN" ${currentType === 'BOOLEAN' ? 'selected' : ''}>Boolean (True/False)</option>
+          <option value="DATETIME" ${currentType === 'DATETIME' ? 'selected' : ''}>Date & Time</option>
+        </optgroup>
+      `;
+
+      if (existingTables.length > 0) {
+        optionsHtml += `<optgroup label="Relations">`;
+        existingTables.forEach(t => {
+          const isSelected = (isRelation && relTable === t) ? 'selected' : '';
+          optionsHtml += `<option value="RELATION:${t}" ${isSelected}>Relation -> ${t}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
+      }
+
+      return optionsHtml;
+    }
+
+    function renderColumns() {
+      const container = document.getElementById('columns-container');
+      container.innerHTML = '';
+      
+      const customCols = tableData.columns.filter(c => !['id', 'userId', 'createdAt', 'updatedAt'].includes(c.name));
+      
+      if (customCols.length === 0) {
+        container.innerHTML = '<p>No custom columns to edit.</p>';
+        return;
+      }
+
+      customCols.forEach(col => {
+        const isRelation = !!(tableData.foreignKeys && tableData.foreignKeys[col.name]);
+        const relTable = isRelation ? tableData.foreignKeys[col.name] : null;
+        
+        const row = document.createElement('div');
+        row.className = 'column-row';
+        row.innerHTML = `
+          <input type="text" class="col-input readonly-input" value="${col.name}" readonly style="flex: 2;">
+          <select class="col-type" style="flex: 1;">
+            ${generateTypeOptions(col.type, isRelation, relTable)}
+          </select>
+          <button class="btn btn-secondary" style="padding: 10px; margin: 0; visibility: hidden;">X</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function addNewColumn() {
+      const container = document.getElementById('columns-container');
+      
+      if (container.innerHTML.includes('No custom columns')) {
+        container.innerHTML = '';
+      }
+      
+      const row = document.createElement('div');
+      row.className = 'column-row';
+      row.innerHTML = `
+        <input type="text" class="col-input" placeholder="column_name" style="flex: 2;">
+        <select class="col-type" style="flex: 1;">
+          ${generateTypeOptions('VARCHAR', false, null)}
+        </select>
+        <button class="btn btn-secondary" style="padding: 10px; margin: 0;" onclick="this.parentElement.remove()">X</button>
+      `;
+      container.appendChild(row);
+    }
+
+    async function submitSchema() {
+      const rows = document.querySelectorAll('.column-row');
+      const columns = [];
+      
+      rows.forEach(row => {
+        const name = row.querySelector('.col-input').value.trim();
+        const type = row.querySelector('.col-type').value;
+        if (name) {
+          columns.push({ name, type });
+        }
+      });
+
+      if (columns.length === 0) {
+        alert("Nothing to update.");
+        return;
+      }
+
+      const confirmMsg = "Are you sure you want to apply this schema migration? This will rewrite the table and preserve your data.";
+      if (!confirm(confirmMsg)) return;
+
+      const res = await fetch(`/admin-api/schema/${tableName}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ columns })
+      });
+
+      if (res.ok) {
+        alert('Migration applied successfully!');
+        window.location.href = '/admin';
+      } else {
+        const err = await res.json();
+        alert('Migration Error: ' + err.error);
+      }
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>

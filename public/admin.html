@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Administration</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f7fafc; color: #1a202c; margin: 0; display: flex; min-height: 100vh; }
+    
+    /* Header */
+    header { background-color: #2b6cb0; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: fixed; width: 100%; top: 0; z-index: 100; box-sizing: border-box; }
+    header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .logout-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; text-decoration: underline; }
+    
+    /* Sidebar */
+    .sidebar { width: 250px; background-color: #ebf8ff; padding: 20px; border-right: 1px solid #bee3f8; position: fixed; height: 100vh; top: 54px; box-sizing: border-box; }
+    .sidebar h2 { font-size: 14px; text-transform: uppercase; color: #2c5282; margin-top: 0; border-bottom: 2px solid #bee3f8; padding-bottom: 8px; }
+    .nav-list { list-style: none; padding: 0; margin: 0; }
+    .nav-list li { margin-bottom: 5px; }
+    .nav-list button { width: 100%; text-align: left; background: none; border: none; padding: 8px 10px; cursor: pointer; color: #2b6cb0; font-size: 15px; border-radius: 4px; font-weight: 600; }
+    .nav-list button:hover { background-color: #bee3f8; }
+    .nav-list button.active { background-color: #3182ce; color: white; }
+    
+    /* Main Content */
+    .main { margin-left: 250px; margin-top: 54px; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; }
+    .top-bar h2 { margin: 0; color: #2d3748; }
+    
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+    th { background-color: #f7fafc; font-weight: 600; color: #4a5568; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; }
+    tr:last-child td { border-bottom: none; }
+    
+    input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; }
+    
+    .btn { padding: 8px 16px; background-color: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; font-size: 14px; }
+    .btn:hover { background-color: #38a169; }
+    .btn-save { background-color: #3182ce; }
+    .btn-save:hover { background-color: #2b6cb0; }
+    .btn-delete { background-color: #e53e3e; }
+    .btn-delete:hover { background-color: #c53030; }
+    .actions { display: flex; gap: 8px; }
+
+    /* API Docs Tabs & Code */
+    .tabs { display: flex; gap: 5px; margin-bottom: 0; }
+    .tab { border: none; padding: 8px 15px; cursor: pointer; background: #e2e8f0; border-radius: 5px 5px 0 0; font-weight: bold; color: #4a5568; }
+    .tab.active { background: #1a202c; color: white; }
+    .code { display: none; }
+    .code.active { display: block; }
+    .code-wrapper { position: relative; margin-bottom: 15px; }
+    .code-wrapper pre { margin: 0; background: #1a202c; color: #e2e8f0; padding: 15px; padding-top: 45px; border-radius: 0 5px 5px 5px; overflow-x: auto; font-size: 13px; font-family: monospace; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: #4a5568; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; z-index: 1; }
+    .copy-btn:hover { background: #718096; }
+    .copy-btn.copied { background: #48bb78; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Site Administration</h1>
+    <button class="logout-btn" onclick="logout()">LOG OUT</button>
+  </header>
+
+  <div class="sidebar">
+    <h2>Dynamic Tables</h2>
+    <ul class="nav-list" id="table-list">
+      <li>Loading...</li>
+    </ul>
+    <br>
+    <a href="/create-table" style="font-size: 14px; color: #2b6cb0; font-weight: bold; text-decoration: none;">+ Create New Table</a>
+
+    <a href="/relations" style="font-size: 14px; color: #2b6cb0; font-weight: bold; text-decoration: none; display: block; margin-top: 15px;">🔗 Manage Relations</a>
+
+    <h2 style="margin-top: 30px;">Help</h2>
+    <ul class="nav-list">
+      <li><button class="nav-btn" id="nav-admin-docs" onclick="loadHelp('admin-docs')">Admin Guide</button></li>
+      <li><button class="nav-btn" id="nav-relations-guide" onclick="loadHelp('relations-guide')">Relations Guide</button></li>
+    </ul>
+  </div>
+
+  <div class="main">
+    <div class="top-bar">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <h2 id="current-table-title">Select a table</h2>
+        <button class="btn" id="edit-schema-btn" style="display: none; padding: 4px 8px; font-size: 12px; background-color: #ed8936;" onclick="editSchema()">Edit Schema</button>
+        <button class="btn btn-delete" id="drop-table-btn" style="display: none; padding: 4px 8px; font-size: 12px;" onclick="dropCurrentTable()">Drop Table</button>
+        <button class="btn" id="api-docs-btn" style="display: none; padding: 4px 8px; font-size: 12px; background-color: #805ad5;" onclick="showApiDocs()">API Docs</button>
+      </div>
+      <button class="btn" id="add-btn" style="display: none;" onclick="addNewRow()">+ Add Row</button>
+    </div>
+    
+    <div id="content">
+      <p style="color: #718096; margin-top: 40px;">Select a table from the sidebar to view and manage its data globally.</p>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      window.location.href = '/admin-login';
+    }
+
+    let currentTable = '';
+    let tableData = { columns: [], data: [] };
+    let relationOptions = {};
+
+    function showCode(id, button) {
+      const lang = id.split('-').pop().toLowerCase();
+      document.querySelectorAll('#content .tab').forEach(tab => {
+        if (tab.innerText.trim().toLowerCase() === lang) tab.classList.add("active");
+        else tab.classList.remove("active");
+      });
+      document.querySelectorAll('#content .code').forEach(codeBlock => {
+        if (codeBlock.id.endsWith(lang)) codeBlock.classList.add("active");
+        else codeBlock.classList.remove("active");
+      });
+    }
+
+    function copyCode(btn) {
+      const pre = btn.nextElementSibling;
+      navigator.clipboard.writeText(pre.textContent);
+      btn.innerText = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { 
+        btn.innerText = 'Copy'; 
+        btn.classList.remove('copied'); 
+      }, 2000);
+    }
+
+    function logout() {
+      localStorage.removeItem('admin_token');
+      window.location.href = '/admin-login';
+    }
+
+    async function authFetch(url, options = {}) {
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(url, options);
+      if (res.status === 401 || res.status === 403) {
+        logout();
+      }
+      return res;
+    }
+
+    async function fetchTables() {
+      const res = await authFetch('/admin-api/tables');
+      if (!res.ok) return;
+      
+      const tables = await res.json();
+      const list = document.getElementById('table-list');
+      
+      // Ensure 'User' is always first
+      const sortedTables = tables.sort((a, b) => {
+        if (a === 'User') return -1;
+        if (b === 'User') return 1;
+        return a.localeCompare(b);
+      });
+
+      list.innerHTML = sortedTables.map(t => `
+        <li><button class="nav-btn" id="nav-${t}" onclick="loadTable('${t}')">${t}</button></li>
+      `).join('');
+      
+      if (sortedTables.length > 0) loadTable(sortedTables[0]);
+    }
+
+    async function fetchRelations(table) {
+      if (relationOptions[table]) return relationOptions[table];
+      const res = await authFetch(`/admin-api/relations/${table}`);
+      if (res.ok) {
+        relationOptions[table] = await res.json();
+        return relationOptions[table];
+      }
+      return [];
+    }
+
+    async function loadTable(table) {
+      currentTable = table;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`nav-${table}`).classList.add('active');
+      document.getElementById('current-table-title').textContent = table;
+      document.getElementById('add-btn').style.display = 'block';
+      
+      const dropBtn = document.getElementById('drop-table-btn');
+      const editSchemaBtn = document.getElementById('edit-schema-btn');
+      const apiDocsBtn = document.getElementById('api-docs-btn');
+      
+      apiDocsBtn.style.display = 'block';
+      dropBtn.style.display = 'block';
+      editSchemaBtn.style.display = 'block';
+      
+      const res = await authFetch(`/admin-api/data/${table}`);
+      if (!res.ok) {
+        document.getElementById('content').innerHTML = '<p>Error loading data.</p>';
+        return;
+      }
+      
+      tableData = await res.json();
+
+      // Pre-fetch relation dropdowns using true native Foreign Keys
+      for (let col of tableData.columns) {
+        let relTable = null;
+        if (col.name === 'userId' && table !== 'User') relTable = 'User';
+        else if (tableData.foreignKeys && tableData.foreignKeys[col.name]) {
+          relTable = tableData.foreignKeys[col.name];
+        }
+        
+        if (relTable) {
+          await fetchRelations(relTable);
+        }
+      }
+
+      renderTable();
+    }
+
+    async function loadHelp(docName) {
+      currentTable = '';
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      const navBtn = document.getElementById(`nav-${docName}`);
+      if (navBtn) navBtn.classList.add('active');
+      
+      document.getElementById('current-table-title').textContent = docName === 'admin-docs' ? 'Admin Guide' : 'Relations Guide';
+      document.getElementById('add-btn').style.display = 'none';
+      document.getElementById('drop-table-btn').style.display = 'none';
+      document.getElementById('edit-schema-btn').style.display = 'none';
+      document.getElementById('api-docs-btn').style.display = 'none';
+      
+      const content = document.getElementById('content');
+      content.innerHTML = '<p style="color: #718096; margin-top: 40px;">Loading...</p>';
+      
+      try {
+        const res = await fetch(`/${docName}`);
+        if (!res.ok) throw new Error('Failed to load');
+        const html = await res.text();
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const container = doc.querySelector('.container') || doc.body;
+        
+        // Apply some styling overrides for the embedded content
+        content.innerHTML = `<div style="max-width: 800px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.6;">${container.innerHTML}</div>`;
+      } catch (err) {
+        content.innerHTML = '<p style="color: red; margin-top: 40px;">Error loading document.</p>';
+      }
+    }
+
+    function showApiDocs() {
+      const content = document.getElementById('content');
+      
+      if (currentTable === 'User') {
+        content.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h2 style="margin-top: 0; color: #2d3748;">API Documentation for 'User'</h2>
+          <p>The User table is special. You use these specific endpoints for authentication.</p>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">1. Register (POST)</h3>
+          <p><code>POST /user/register</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('user-reg-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('user-reg-axios', this)">Axios</button>
+          </div>
+          <div id="user-reg-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/user/register", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username: "john", password: "123" })
+})
+.then(res => res.json())
+.then(data => console.log(data.token));</pre>
+          </div>
+          <div id="user-reg-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.post("http://localhost:3000/user/register", {
+  username: "john", 
+  password: "123"
+})
+.then(res => console.log(res.data.token));</pre>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px;">2. Login (POST)</h3>
+          <p><code>POST /user/login</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('user-log-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('user-log-axios', this)">Axios</button>
+          </div>
+          <div id="user-log-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/user/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username: "john", password: "123" })
+})
+.then(res => res.json())
+.then(data => console.log(data.token));</pre>
+          </div>
+          <div id="user-log-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.post("http://localhost:3000/user/login", {
+  username: "john", 
+  password: "123"
+})
+.then(res => console.log(res.data.token));</pre>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px;">3. Delete Own Account (DELETE)</h3>
+          <p><code>DELETE /user/delete</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('user-del-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('user-del-axios', this)">Axios</button>
+          </div>
+          <div id="user-del-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/user/delete", {
+  method: "DELETE",
+  headers: { "Authorization": "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+          </div>
+          <div id="user-del-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.delete("http://localhost:3000/user/delete", {
+  headers: { "Authorization": "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => console.log(res.data));</pre>
+          </div>
+
+          <button class="btn" style="margin-top: 20px;" onclick="renderTable()">Back to Table Data</button>
+        </div>
+        `;
+        return;
+      }
+
+      const cols = tableData.columns.filter(c => !['id', 'userId', 'createdAt', 'updatedAt'].includes(c.name));
+      const payloadObj = {};
+      cols.forEach(c => payloadObj[c.name] = "value");
+      const payloadStr = JSON.stringify(payloadObj, null, 2).replace(/\n/g, '\n  ');
+
+      let relationsText = '';
+      if (tableData.foreignKeys && Object.keys(tableData.foreignKeys).length > 0) {
+        relationsText = `<div style="background: #eef2f7; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3182ce;">
+          <h3 style="margin-top: 0; color: #2c5282;">Relational Data</h3>
+          <p>This table contains relational data. When you fetch records, you will receive the ID for the following relations:</p>
+          <ul>
+            ${Object.entries(tableData.foreignKeys).map(([col, refTable]) => `<li><code>${col}</code> refers to an ID in the <strong>${refTable}</strong> table.</li>`).join('')}
+          </ul>
+          <p>To get the full related object, you must make a separate GET request to <code>/api/${Object.values(tableData.foreignKeys)[0]}/:id</code> using the ID returned.</p>
+        </div>`;
+      }
+
+      const html = `
+        <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h2 style="margin-top: 0; color: #2d3748;">API Documentation for '${currentTable}'</h2>
+          <p>Use these endpoints to integrate the <strong>${currentTable}</strong> table into your frontend application.</p>
+          
+          ${relationsText}
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">1. Create Record (POST)</h3>
+          <p><code>POST /api/${currentTable}</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('c-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('c-axios', this)">Axios</button>
+          </div>
+          <div id="c-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/api/${currentTable}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN"
+  },
+  body: JSON.stringify(${payloadStr.replace(/\n  /g, '\n    ')})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+          </div>
+          <div id="c-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.post("http://localhost:3000/api/${currentTable}", 
+  ${payloadStr.replace(/\n  /g, '\n  ')}, 
+  { headers: { Authorization: "Bearer YOUR_JWT_TOKEN" } }
+)
+.then(res => console.log(res.data));</pre>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px;">2. Get All Records (GET)</h3>
+          <p><code>GET /api/${currentTable}</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('r-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('r-axios', this)">Axios</button>
+          </div>
+          <div id="r-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/api/${currentTable}", {
+  headers: { "Authorization": "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+          </div>
+          <div id="r-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.get("http://localhost:3000/api/${currentTable}", {
+  headers: { Authorization: "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => console.log(res.data));</pre>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px;">3. Update Record (PUT)</h3>
+          <p><code>PUT /api/${currentTable}/:id</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('u-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('u-axios', this)">Axios</button>
+          </div>
+          <div id="u-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/api/${currentTable}/RECORD_ID", {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN"
+  },
+  body: JSON.stringify(${payloadStr.replace(/\n  /g, '\n    ')})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+          </div>
+          <div id="u-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.put("http://localhost:3000/api/${currentTable}/RECORD_ID", 
+  ${payloadStr.replace(/\n  /g, '\n  ')}, 
+  { headers: { Authorization: "Bearer YOUR_JWT_TOKEN" } }
+)
+.then(res => console.log(res.data));</pre>
+          </div>
+
+          <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px;">4. Delete Record (DELETE)</h3>
+          <p><code>DELETE /api/${currentTable}/:id</code></p>
+          <div class="tabs">
+            <button class="tab active" onclick="showCode('d-fetch', this)">Fetch</button>
+            <button class="tab" onclick="showCode('d-axios', this)">Axios</button>
+          </div>
+          <div id="d-fetch" class="code-wrapper code active">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>fetch("http://localhost:3000/api/${currentTable}/RECORD_ID", {
+  method: "DELETE",
+  headers: { "Authorization": "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+          </div>
+          <div id="d-axios" class="code-wrapper code">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre>axios.delete("http://localhost:3000/api/${currentTable}/RECORD_ID", {
+  headers: { Authorization: "Bearer YOUR_JWT_TOKEN" }
+})
+.then(res => console.log(res.data));</pre>
+          </div>
+
+          <button class="btn" style="margin-top: 20px;" onclick="renderTable()">Back to Table Data</button>
+        </div>
+      `;
+      content.innerHTML = html;
+    }
+
+    function generateInputHtml(col, rowId, val = '', isNew = false) {
+      let relTable = null;
+      if (col.name === 'userId' && currentTable !== 'User') relTable = 'User';
+      else if (tableData.foreignKeys && tableData.foreignKeys[col.name]) {
+        relTable = tableData.foreignKeys[col.name];
+      }
+
+      const isReadonly = ['id', 'createdAt', 'updatedAt'].includes(col.name);
+
+      if (relTable && relationOptions[relTable]) {
+        const opts = relationOptions[relTable].map(o => `<option value="${o.id}" ${o.id === val ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
+        return `<select id="input-${rowId}-${col.name}">
+                  <option value="">-- Select ${relTable} --</option>
+                  ${opts}
+                </select>`;
+      }
+
+      if (isReadonly) {
+        return `<input type="text" value="${escapeHtml(val)}" id="input-${rowId}-${col.name}" readonly ${isNew ? 'placeholder="auto"' : ''} style="background: #edf2f7;">`;
+      }
+
+      if (col.name === 'password') {
+        return `<input type="password" ${isNew ? '' : 'placeholder="Leave blank to keep current"'} id="input-${rowId}-${col.name}">`;
+      }
+
+      const type = (col.type || '').toUpperCase();
+      
+      if (type === 'TEXT') {
+        return `<textarea id="input-${rowId}-${col.name}" style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; font-family: inherit;">${escapeHtml(val)}</textarea>`;
+      }
+      
+      if (type === 'BOOLEAN') {
+        return `<select id="input-${rowId}-${col.name}">
+                  <option value="true" ${val === 'true' || val === 1 ? 'selected' : ''}>True</option>
+                  <option value="false" ${val === 'false' || val === 0 ? 'selected' : ''}>False</option>
+                </select>`;
+      }
+      
+      if (type === 'DATETIME') {
+        // Simple heuristic to format value for datetime-local
+        let dtVal = val ? new Date(val).toISOString().slice(0, 16) : '';
+        // If parsing fails or value is simple, just use it
+        if (!dtVal && val) dtVal = val;
+        return `<input type="datetime-local" value="${dtVal}" id="input-${rowId}-${col.name}">`;
+      }
+      
+      if (type === 'INTEGER' || type === 'REAL') {
+        const step = type === 'REAL' ? 'step="any"' : 'step="1"';
+        return `<input type="number" value="${escapeHtml(val)}" ${step} id="input-${rowId}-${col.name}">`;
+      }
+
+      // Default for VARCHAR, etc.
+      return `<input type="text" value="${escapeHtml(val)}" id="input-${rowId}-${col.name}">`;
+    }
+
+    function renderTable() {
+      const content = document.getElementById('content');
+      if (tableData.columns.length === 0) {
+        content.innerHTML = '<p>No data available.</p>';
+        return;
+      }
+
+      let html = `
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                ${tableData.columns.map(c => `<th>${c.name}</th>`).join('')}
+                <th style="width: 150px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              ${tableData.data.map(row => `
+                <tr id="row-${row.id}">
+                  ${tableData.columns.map(c => `
+                    <td>${generateInputHtml(c, row.id, row[c.name])}</td>
+                  `).join('')}
+                  <td>
+                    <div class="actions">
+                      <button class="btn btn-save" onclick="saveRow('${row.id}')">Save</button>
+                      <button class="btn btn-delete" onclick="deleteRow('${row.id}')">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      content.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function addNewRow() {
+      const tbody = document.getElementById('table-body');
+      const newRowId = 'new-' + Date.now();
+      const newRow = document.createElement('tr');
+      newRow.id = `row-${newRowId}`;
+      newRow.innerHTML = `
+        ${tableData.columns.map(c => `
+          <td>${generateInputHtml(c, newRowId, '', true)}</td>
+        `).join('')}
+        <td>
+          <div class="actions">
+            <button class="btn btn-save" onclick="createRow('${newRowId}')">Save</button>
+            <button class="btn btn-delete" onclick="loadTable('${currentTable}')">Cancel</button>
+          </div>
+        </td>
+      `;
+      tbody.prepend(newRow);
+    }
+
+    async function saveRow(id) {
+      const body = {};
+      tableData.columns.forEach(c => {
+        body[c.name] = document.getElementById(`input-${id}-${c.name}`).value;
+      });
+
+      const res = await authFetch(`/admin-api/data/${currentTable}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) alert('Saved!');
+      else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    async function createRow(newRowId) {
+      const body = {};
+      tableData.columns.forEach(c => {
+        if (!['id', 'createdAt', 'updatedAt'].includes(c.name)) {
+          const val = document.getElementById(`input-${newRowId}-${c.name}`).value;
+          if (val) body[c.name] = val;
+        }
+      });
+
+      const res = await authFetch(`/admin-api/data/${currentTable}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        loadTable(currentTable);
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    async function deleteRow(id) {
+      if (!confirm('Are you sure you want to delete this row?')) return;
+      
+      const res = await authFetch(`/admin-api/data/${currentTable}/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) loadTable(currentTable);
+      else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    async function dropCurrentTable() {
+      const confirmMessage = `WARNING: Are you absolutely sure you want to permanently delete the table "${currentTable}" and ALL of its data? This cannot be undone!`;
+      if (!confirm(confirmMessage)) return;
+
+      const res = await authFetch(`/admin-api/tables/${currentTable}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        alert(`Table ${currentTable} dropped successfully.`);
+        document.getElementById('current-table-title').textContent = 'Select a table';
+        document.getElementById('add-btn').style.display = 'none';
+        document.getElementById('drop-table-btn').style.display = 'none';
+        document.getElementById('edit-schema-btn').style.display = 'none';
+        document.getElementById('content').innerHTML = '<p style="color: #718096; margin-top: 40px;">Select a table from the sidebar to view and manage its data globally.</p>';
+        fetchTables();
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    function editSchema() {
+      if (currentTable) {
+        window.location.href = `/edit-schema?table=${currentTable}`;
+      }
+    }
+
+    fetchTables();
+  </script>
+</body>
+</html>

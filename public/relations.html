@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Relationships</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f7fafc; color: #1a202c; margin: 0; padding: 40px 20px; }
+    h1 { margin-top: 0; color: #2d3748; }
+    .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #4a5568; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+    .btn { padding: 10px 20px; background-color: #3182ce; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 16px; margin-top: 10px; }
+    .btn:hover { background-color: #2b6cb0; }
+    .btn-secondary { background-color: #e2e8f0; color: #4a5568; margin-right: 10px; text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 4px; font-weight: 600; }
+    .btn-secondary:hover { background-color: #cbd5e0; }
+    .info-box { background: #ebf8ff; border-left: 4px solid #3182ce; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #2c5282; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Database Relationships</h1>
+    <div class="info-box">
+      Use this tool to automatically configure robust SQL relationships between your tables. We will safely migrate your schema to insert the correct Foreign Keys or Junction Tables based on the relationship type.
+    </div>
+
+    <form id="relationForm">
+      <div class="form-group">
+        <label>Relationship Type</label>
+        <select id="relType" onchange="updatePreview()">
+          <option value="One-to-Many">One-to-Many (1:N)</option>
+          <option value="Many-to-One">Many-to-One (N:1)</option>
+          <option value="One-to-One">One-to-One (1:1)</option>
+          <option value="Many-to-Many">Many-to-Many (N:M)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 20px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Table A</label>
+          <select id="tableA" onchange="updatePreview()"></select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Table B</label>
+          <select id="tableB" onchange="updatePreview()"></select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Custom Foreign Key / Junction Name (Optional)</label>
+        <input type="text" id="relationName" placeholder="Leave blank for auto-generation" oninput="updatePreview()">
+      </div>
+
+      <div class="info-box" style="background: #edf2f7; border-color: #718096; color: #4a5568;" id="previewBox">
+        <!-- Preview text injected here -->
+      </div>
+
+      <div>
+        <a href="/admin" class="btn-secondary">Back to Admin</a>
+        <button type="submit" class="btn">Create Relationship</button>
+      </div>
+    </form>
+    
+    <hr style="margin: 40px 0; border: 0; border-top: 1px solid #e2e8f0;">
+
+    <h2>Existing Relationships</h2>
+    <div id="existing-relations">
+      <p style="color: #718096;">Loading existing relations...</p>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('admin_token');
+    if (!token) window.location.href = '/admin-login';
+
+    let tables = [];
+
+    async function loadTables() {
+      const res = await fetch('/admin-api/tables', { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) {
+        tables = await res.json();
+        const tA = document.getElementById('tableA');
+        const tB = document.getElementById('tableB');
+        tables.forEach(t => {
+          tA.innerHTML += `<option value="${t}">${t}</option>`;
+          tB.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+        updatePreview();
+      }
+    }
+
+    function updatePreview() {
+      const type = document.getElementById('relType').value;
+      const tA = document.getElementById('tableA').value;
+      const tB = document.getElementById('tableB').value;
+      let relName = document.getElementById('relationName').value.trim();
+      
+      if (!tA || !tB) return;
+
+      const preview = document.getElementById('previewBox');
+      
+      if (type === 'One-to-Many') {
+        const fk = relName || `${tA}Id`;
+        preview.innerHTML = `<strong>Result:</strong> Table <code>${tB}</code> will get a new foreign key column named <code>${fk}</code> pointing to <code>${tA}</code>.`;
+      } else if (type === 'Many-to-One') {
+        const fk = relName || `${tB}Id`;
+        preview.innerHTML = `<strong>Result:</strong> Table <code>${tA}</code> will get a new foreign key column named <code>${fk}</code> pointing to <code>${tB}</code>.`;
+      } else if (type === 'One-to-One') {
+        const fk = relName || `${tB}Id`;
+        preview.innerHTML = `<strong>Result:</strong> Table <code>${tA}</code> will get a new UNIQUE foreign key column named <code>${fk}</code> pointing to <code>${tB}</code>.`;
+      } else if (type === 'Many-to-Many') {
+        const junction = relName || `${tA}_${tB}`;
+        preview.innerHTML = `<strong>Result:</strong> A new junction table named <code>${junction}</code> will be created to link <code>${tA}</code> and <code>${tB}</code>.`;
+      }
+    }
+
+    document.getElementById('relationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        type: document.getElementById('relType').value,
+        tableA: document.getElementById('tableA').value,
+        tableB: document.getElementById('tableB').value,
+        relationName: document.getElementById('relationName').value.trim()
+      };
+
+      if (!confirm("Are you sure you want to create this relationship? This will perform a schema migration.")) return;
+
+      try {
+        const res = await fetch('/admin-api/relations', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(`Success! ${data.message}`);
+          window.location.href = '/admin';
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert('Request failed.');
+      }
+    });
+
+    async function loadRelationsList() {
+      const res = await fetch('/admin-api/all-relations', { headers: { 'Authorization': `Bearer ${token}` } });
+      const container = document.getElementById('existing-relations');
+      if (res.ok) {
+        const relations = await res.json();
+        if (relations.length === 0) {
+          container.innerHTML = '<p style="color: #718096;">No relationships exist yet.</p>';
+          return;
+        }
+        
+        let html = '<table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 15px;">';
+        html += '<tr style="border-bottom: 2px solid #e2e8f0;"><th style="padding: 10px;">Source Table</th><th style="padding: 10px;">Column</th><th style="padding: 10px;">Target Table</th><th style="padding: 10px;">Action</th></tr>';
+        
+        relations.forEach(rel => {
+          html += `<tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px;"><strong>${rel.sourceTable}</strong></td>
+            <td style="padding: 10px;"><code>${rel.sourceColumn}</code></td>
+            <td style="padding: 10px;"><strong>${rel.targetTable}</strong> (id)</td>
+            <td style="padding: 10px;">
+              <button onclick="deleteRelation('${rel.sourceTable}', '${rel.sourceColumn}')" style="background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Delete</button>
+            </td>
+          </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<p style="color: red;">Failed to load relationships.</p>';
+      }
+    }
+
+    async function deleteRelation(table, column) {
+      if (!confirm(`WARNING: Are you sure you want to delete the relationship on ${table}.${column}? This will perform a schema migration.`)) return;
+      
+      const res = await fetch(`/admin-api/relations/${table}/${column}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        alert('Relationship deleted successfully.');
+        loadRelationsList();
+      } else {
+        const data = await res.json();
+        alert('Error: ' + data.error);
+      }
+    }
+
+    loadTables();
+    loadRelationsList();
+  </script>
+</body>
+</html>

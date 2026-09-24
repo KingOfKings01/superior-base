@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Student CRUD API - Documentation</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f7fb;
+        color: #222;
+        line-height: 1.6;
+      }
+
+      header {
+        background: #111827;
+        color: white;
+        padding: 30px;
+      }
+
+      header h1 {
+        margin: 0;
+      }
+
+      header p {
+        color: #d1d5db;
+        margin: 5px 0 0;
+      }
+
+      nav {
+        background: white;
+        padding: 15px 30px;
+        border-bottom: 1px solid #ddd;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      nav a {
+        margin-right: 20px;
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
+
+      section {
+        background: white;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+      }
+
+      h2 {
+        margin-top: 0;
+      }
+
+      code {
+        background: #eef2f7;
+        padding: 3px 6px;
+        border-radius: 4px;
+      }
+
+      pre {
+        background: #111827;
+        color: #e5e7eb;
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+
+      .method {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        font-size: 13px;
+        margin-right: 8px;
+      }
+
+      .get {
+        background: #16a34a;
+      }
+
+      .post {
+        background: #2563eb;
+      }
+
+      .put {
+        background: #d97706;
+      }
+
+      .delete {
+        background: #dc2626;
+      }
+
+      .note {
+        background: #fff7ed;
+        border-left: 4px solid #f97316;
+        padding: 12px;
+      }
+
+      .success {
+        background: #ecfdf5;
+        border-left: 4px solid #16a34a;
+        padding: 12px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 0;
+      }
+
+      .tab {
+        border: none;
+        padding: 8px 15px;
+        cursor: pointer;
+        background: #e5e7eb;
+        border-radius: 5px 5px 0 0;
+        font-weight: bold;
+      }
+
+      .tab.active {
+        background: #111827;
+        color: white;
+      }
+
+      .code {
+        display: none;
+      }
+
+      .code.active {
+        display: block;
+      }
+
+      .code-wrapper {
+        position: relative;
+        margin-bottom: 15px;
+      }
+
+      .code-wrapper pre {
+        margin: 0;
+        padding-top: 45px;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #374151;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        z-index: 1;
+      }
+
+      .copy-btn:hover {
+        background: #4b5563;
+      }
+
+      .copy-btn.copied {
+        background: #16a34a;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Student CRUD API</h1>
+      <p>Simple REST API for your projects</p>
+    </header>
+    <nav>
+      <a href="#start">Getting Started</a>
+      <a href="#authentication">Authentication</a>
+      <a href="#collections">Collections</a> <a href="#crud">CRUD</a>
+      <a href="#summary">API Summary</a>
+      <a href="/admin" target="_blank" style="background-color: #5a67d8; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; text-decoration: none; transition: background-color 0.2s;">Open Admin Panel ↗</a>
+    </nav>
+    <main>
+      <!-- GETTING STARTED -->
+      <section id="start">
+        <h2>Getting Started</h2>
+        <p>
+          This API allows you to create, read, update and delete records for
+          your projects.
+        </p>
+
+        <ol>
+          <li>Create an account.</li>
+          <li>Login to your account.</li>
+          <li>Get your JWT authentication token.</li>
+          <li>Use the JWT token in your API requests.</li>
+          <li>
+            Create your collection automatically by adding the first record.
+          </li>
+          <li>Start using CRUD operations.</li>
+        </ol>
+
+        <div class="info">
+          <strong>Important:</strong>
+          The API uses a JWT token for authentication. There is no separate API
+          Key.
+        </div>
+      </section>
+      <!-- AUTHENTICATION -->
+      <section id="authentication">
+        <h2>Authentication</h2>
+        <p>
+          You need an account before using the API. Authentication is handled
+          using JWT tokens.
+        </p>
+
+        <!-- REGISTER -->
+
+        <h3>1. Register</h3>
+
+        <p>Create a new account using:</p>
+
+        <h3>
+          <span class="method post">POST</span>
+          /user/register
+        </h3>
+
+        <p>Full URL:</p>
+
+        <pre>http://localhost:3000/user/register</pre>
+
+        <p>Request body:</p>
+
+        <pre>
+{
+"username": "rahul",
+"password": "123456"
+}</pre
+        >
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('register-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('register-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="register-fetch" class="code active">
+fetch("http://localhost:3000/user/register", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+username: "rahul",
+password: "123456"
+})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="register-axios" class="code">
+import axios from "axios";
+axios.post("http://localhost:3000/user/register", {
+username: "rahul",
+password: "123456"
+})
+.then(res => console.log(res.data));</pre
+        >
+
+        <h3>Register Response</h3>
+
+        <pre>
+{
+"message": "Registered successfully",
+"username": "rahul",
+"token": "YOUR_JWT_TOKEN"
+}</pre
+        >
+
+        <!-- LOGIN -->
+
+        <h3>2. Login</h3>
+
+        <p>Login using your username and password:</p>
+
+        <h3>
+          <span class="method post">POST</span>
+          /user/login
+        </h3>
+
+        <p>Full URL:</p>
+
+        <pre>http://localhost:3000/user/login</pre>
+
+        <p>Request body:</p>
+
+        <pre>
+{
+"username": "rahul",
+"password": "123456"
+}</pre
+        >
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('login-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('login-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="login-fetch" class="code active">
+fetch("http://localhost:3000/user/login", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+username: "rahul",
+password: "123456"
+})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="login-axios" class="code">
+import axios from "axios";
+
+axios.post("http://localhost:3000/user/login", {
+username: "rahul",
+password: "123456"
+})
+.then(res => console.log(res.data));</pre
+        >
+
+        <h3>Login Response</h3>
+
+        <pre>
+{
+"message": "Login successful",
+"username": "rahul",
+"token": "YOUR_JWT_TOKEN"
+}</pre
+        >
+
+        <h3>Using the JWT Token</h3>
+
+        <p>
+          Add the JWT token to the <code>Authorization</code> header for every
+          CRUD request.
+        </p>
+
+        <pre>Authorization: Bearer YOUR_JWT_TOKEN</pre>
+
+        <div class="success">The JWT token is valid for 1 day.</div>
+
+        <div class="note">Never share your JWT token with another person.</div>
+      </section>
+      <!-- BASE URL -->
+      <section>
+        <h2>Base URL</h2>
+        <pre>http://localhost:3000/api</pre>
+
+        <p>All CRUD requests start with this URL.</p>
+
+        <p>General format:</p>
+
+        <pre>/api/:collection</pre>
+
+        <p>Examples:</p>
+
+        <pre>
+/api/products
+/api/students
+/api/books
+/api/courses</pre
+        >
+      </section>
+      <!-- COLLECTIONS -->
+      <section id="collections">
+        <h2>Collections</h2>
+        <p>A collection is the name you choose for your data.</p>
+
+        <p>Examples:</p>
+
+        <pre>
+products
+students
+books
+courses
+orders
+employees</pre
+        >
+
+        <p>
+          You do not need to create a collection separately. The collection is
+          created automatically when you add your first record.
+        </p>
+
+        <h3>Example</h3>
+
+        <pre>POST /api/products</pre>
+
+        <p>
+          If the <code>products</code> collection does not exist for the
+          authenticated user, the API automatically creates it.
+        </p>
+
+        <div class="info">
+          Collections belong to the authenticated user. Different users can have
+          collections with the same name.
+        </div>
+      </section>
+      <!-- CRUD -->
+      <section id="crud">
+        <h2>CRUD Operations</h2>
+        <!-- CREATE -->
+
+        <h3>
+          <span class="method post">POST</span>
+          Create Record
+        </h3>
+
+        <pre>POST /api/:collection</pre>
+
+        <p>Example:</p>
+
+        <pre>POST /api/products</pre>
+
+        <p>Request body:</p>
+
+        <pre>
+{
+"name": "Laptop",
+"price": 50000
+}</pre
+        >
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('create-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('create-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="create-fetch" class="code active">
+fetch("http://localhost:3000/api/products", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+},
+body: JSON.stringify({
+name: "Laptop",
+price: 50000
+})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="create-axios" class="code">
+import axios from "axios";
+
+
+axios.post("http://localhost:3000/api/products", {
+name: "Laptop",
+price: 50000
+}, {
+headers: {
+Authorization: "Bearer YOUR_JWT_TOKEN"
+}
+})
+.then(res => console.log(res.data));</pre
+        >
+
+        <h4>Response</h4>
+
+        <pre>
+{
+"id": "550e8400-e29b-41d4-a716-446655440000",
+"data": {
+"name": "Laptop",
+"price": 50000
+},
+"collectionId": "collection-uuid",
+"createdAt": "2026-09-11T10:00:00.000Z",
+"updatedAt": "2026-09-11T10:00:00.000Z"
+}</pre
+        >
+
+        <!-- GET ALL -->
+
+        <h3>
+          <span class="method get">GET</span>
+          Get All Records
+        </h3>
+
+        <pre>GET /api/:collection</pre>
+
+        <p>Example:</p>
+
+        <pre>GET /api/products</pre>
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('get-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('get-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="get-fetch" class="code active">
+fetch("http://localhost:3000/api/products", {
+headers: {
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+}
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="get-axios" class="code">
+import axios from "axios";
+
+axios.get("http://localhost:3000/api/products", {
+headers: {
+Authorization: "Bearer YOUR_JWT_TOKEN"
+}
+})
+.then(res => console.log(res.data));</pre
+        >
+
+        <h4>Response</h4>
+
+        <p>
+          The list endpoint returns the JSON data flattened into the main record
+          object.
+        </p>
+
+        <pre>
+[
+{
+"id": "550e8400-e29b-41d4-a716-446655440000",
+"collectionId": "collection-uuid",
+"createdAt": "2026-09-11T10:00:00.000Z",
+"updatedAt": "2026-09-11T10:00:00.000Z",
+"name": "Laptop",
+]
+}
+]
+</pre>
+
+        <h4>User Specific Filtering</h4>
+        <div class="success">
+          <strong>Auto-Scoping:</strong> The API automatically filters all records by the currently logged-in user. The <code>GET /api/:collection</code> endpoint will <strong>only</strong> return records that were created by the user whose JWT token is provided in the header! You do not need to manually filter by user ID on the frontend.
+        </div>
+        
+        <h4>Advanced Query Filtering</h4>
+        <p>You can further filter the backend results by adding query parameters to the URL. The backend will return only the records that exactly match your filters.</p>
+        
+        <pre>GET /api/products?category=Electronics&amp;status=active</pre>
+
+        <p><strong>Auto-Generating Query Strings:</strong> Instead of manually typing the URL, you can auto-generate it using objects!</p>
+        
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('filter-fetch', this)">
+            Fetch
+          </button>
+          <button class="tab" onclick="showCode('filter-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="filter-fetch" class="code active">
+// Fetch auto-generates the query string using URLSearchParams
+const params = new URLSearchParams({
+  category: "Electronics",
+  status: "active"
+}).toString();
+
+fetch(`http://localhost:3000/api/products?${params}`, {
+  headers: {
+    "Authorization": "Bearer YOUR_JWT_TOKEN"
+  }
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+
+        <pre id="filter-axios" class="code">
+import axios from "axios";
+
+// Axios auto-generates the URL using the 'params' object!
+axios.get("http://localhost:3000/api/products", {
+  params: {
+    category: "Electronics",
+    status: "active"
+  },
+  headers: {
+    Authorization: "Bearer YOUR_JWT_TOKEN"
+  }
+})
+.then(res => console.log(res.data));</pre>
+
+        <!-- GET ONE -->
+
+        <h3>
+          <span class="method get">GET</span>
+          Get One Record
+        </h3>
+
+        <pre>GET /api/:collection/:id</pre>
+
+        <p>Example:</p>
+
+        <pre>GET /api/products/550e8400-e29b-41d4-a716-446655440000</pre>
+
+        <div class="info">
+          Record IDs are UUID strings. Do not use numeric IDs such as
+          <code>1</code>.
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('one-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('one-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="one-fetch" class="code active">
+fetch("http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000", {
+headers: {
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+}
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="one-axios" class="code">
+import axios from "axios";
+
+
+axios.get(
+"http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000",
+{
+headers: {
+Authorization: "Bearer YOUR_JWT_TOKEN"
+}
+}
+)
+.then(res => console.log(res.data));</pre
+        >
+
+        <h4>Record Not Found</h4>
+
+        <pre>
+{
+"message": "Record not found"
+}</pre
+        >
+
+        <!-- UPDATE -->
+
+        <h3>
+          <span class="method put">PUT</span>
+          Update Record
+        </h3>
+
+        <pre>PUT /api/:collection/:id</pre>
+
+        <p>Example:</p>
+
+        <pre>PUT /api/products/550e8400-e29b-41d4-a716-446655440000</pre>
+
+        <div class="info">
+          Replace <code>:id</code> with the UUID of the record you want to
+          update.
+        </div>
+
+        <p>Request body:</p>
+
+        <pre>
+{
+"name": "MacBook",
+"price": 60000
+}</pre
+        >
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('update-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('update-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="update-fetch" class="code active">
+fetch("http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000", {
+method: "PUT",
+headers: {
+"Content-Type": "application/json",
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+},
+body: JSON.stringify({
+name: "MacBook",
+price: 60000
+})
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="update-axios" class="code">
+import axios from "axios";
+axios.put(
+"http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000",
+{
+name: "MacBook",
+price: 60000
+},
+{
+headers: {
+Authorization: "Bearer YOUR_JWT_TOKEN"
+}
+}
+)
+.then(res => console.log(res.data));</pre
+        >
+
+        <h4>Update Behavior</h4>
+
+        <p>
+          The API first checks whether the record exists in the requested
+          collection and belongs to the authenticated user.
+        </p>
+
+        <p>
+          If the record exists, its stored <code>data</code> is replaced with
+          the request body.
+        </p>
+
+        <p>If the record does not exist:</p>
+
+        <pre>
+{
+
+
+"message": "Record not found"
+}</pre
+        >
+
+        <!-- DELETE -->
+
+        <h3>
+          <span class="method delete">DELETE</span>
+          Delete Record
+        </h3>
+
+        <pre>DELETE /api/:collection/:id</pre>
+
+        <p>Example:</p>
+
+        <pre>DELETE /api/products/550e8400-e29b-41d4-a716-446655440000</pre>
+
+        <div class="tabs">
+          <button class="tab active" onclick="showCode('delete-fetch', this)">
+            Fetch
+          </button>
+
+          <button class="tab" onclick="showCode('delete-axios', this)">
+            Axios
+          </button>
+        </div>
+
+        <pre id="delete-fetch" class="code active">
+fetch("http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000", {
+method: "DELETE",
+headers: {
+"Authorization": "Bearer YOUR_JWT_TOKEN"
+}
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre
+        >
+
+        <pre id="delete-axios" class="code">
+import axios from "axios";
+axios.delete(
+"http://localhost:3000/api/products/550e8400-e29b-41d4-a716-446655440000",
+{
+headers: {
+Authorization: "Bearer YOUR_JWT_TOKEN"
+}
+}
+)
+.then(res => console.log(res.data));</pre
+        >
+
+        <h4>Delete Response</h4>
+
+        <pre>
+{
+"message": "Record deleted"
+}</pre
+        >
+      </section>
+      <!-- SUMMARY -->
+      <section id="summary">
+        <h2>API Summary</h2>
+        <pre>
+Authentication
+
+POST /user/register
+POST /user/login
+
+CRUD
+
+POST /api/:collection
+GET /api/:collection
+GET /api/:collection/:id
+PUT /api/:collection/:id
+DELETE /api/:collection/:id
+</pre
+        >
+
+        <h3>Authentication</h3>
+
+        <pre>Authorization: Bearer YOUR_JWT_TOKEN</pre>
+
+        <h3>Record IDs</h3>
+
+        <p>Record IDs are UUID strings.</p>
+
+        <pre>550e8400-e29b-41d4-a716-446655440000</pre>
+
+        <p>
+          Replace <code>:collection</code> with your collection name and
+          <code>:id</code> with the record UUID.
+        </p>
+      </section>
+      <!-- IMPORTANT -->
+      <section>
+        <h2>Important</h2>
+        <ul>
+          <li>Create an account before using the API.</li>
+          <li>Login to receive your JWT token.</li>
+          <li>The JWT token expires after 1 day.</li>
+          <li>Send the JWT token with every CRUD request.</li>
+          <li>Use <code>Authorization: Bearer YOUR_JWT_TOKEN</code>.</li>
+          <li>Never share your JWT token.</li>
+          <li>You can create any collection name you want.</li>
+          <li>
+            A collection is created automatically on the first POST request.
+          </li>
+          <li>Use <code>/:id</code> to work with a specific record.</li>
+          <li>Record IDs are UUID strings, not numbers.</li>
+          <li>Each user's collections are isolated from other users.</li>
+        </ul>
+      </section>
+    </main>
+    <script>
+      function showCode(id, button) {
+        const lang = id.split('-').pop().toLowerCase();
+        
+        // Update all tabs across the page
+        document.querySelectorAll('.tab').forEach((tab) => {
+          if (tab.innerText.trim().toLowerCase() === lang) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
+        });
+        
+        // Update all code blocks across the page
+        document.querySelectorAll('.code').forEach((codeBlock) => {
+          if (codeBlock.id.endsWith(lang)) {
+            codeBlock.classList.add("active");
+          } else {
+            codeBlock.classList.remove("active");
+          }
+        });
+      }
+
+      // Automatically add Copy buttons to all code blocks
+      document.querySelectorAll('pre').forEach(pre => {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.innerText = 'Copy';
+        btn.onclick = () => {
+          navigator.clipboard.writeText(pre.textContent);
+          btn.innerText = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => { 
+            btn.innerText = 'Copy'; 
+            btn.classList.remove('copied'); 
+          }, 2000);
+        };
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-wrapper';
+        
+        // If this is a toggleable code block, transfer attributes to wrapper
+        if (pre.classList.contains('code')) {
+          wrapper.classList.add('code');
+          if (pre.classList.contains('active')) wrapper.classList.add('active');
+          wrapper.id = pre.id;
+          pre.removeAttribute('id');
+          pre.className = '';
+        }
+        
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(btn);
+        wrapper.appendChild(pre);
+      });
+    </script>
+  </body>
+</html>

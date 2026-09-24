@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Quick Guide</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f7fb; color: #333; line-height: 1.6; margin: 0; padding: 40px 20px; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    h1 { color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-top: 0; }
+    h2 { color: #2563eb; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    p, li { font-size: 16px; color: #4b5563; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    strong { color: #111827; }
+    
+    .btn { display: inline-block; padding: 12px 20px; background: #5a67d8; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 30px; }
+    .btn:hover { background: #434ce6; }
+    .btn-secondary { background: #16a34a; margin-left: 10px; }
+    .btn-secondary:hover { background: #15803d; }
+    
+    .highlight { background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #dc2626; }
+    .note { background: #fff7ed; border-left: 4px solid #f97316; padding: 12px; margin-top: 20px; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel - Quick Guide</h1>
+    <p>Welcome to the Admin Panel! This short guide will help you manage your database quickly and easily.</p>
+
+    <h2>1. Accessing the Admin Panel</h2>
+    <p>You can access the admin dashboard by navigating to <span class="highlight">/admin</span> in your browser. You will need to log in using an administrator account (which you can create via the <code>npm run createsuperuser</code> script).</p>
+
+    <h2>2. Managing Tables (Collections)</h2>
+    <ul>
+      <li><strong>View Tables:</strong> The sidebar lists all existing tables in your database.</li>
+      <li><strong>Create Table:</strong> Click the <strong>"+ New Table"</strong> button in the sidebar. You can define custom columns (Text, Number, Boolean, or Relations).</li>
+      <li><strong>Edit Schema:</strong> Click the gear icon (⚙️) next to a table to add new columns to an existing table.</li>
+      <li><strong>Delete Table:</strong> Click the trash icon (🗑️) to drop a table entirely. <em>Warning: This deletes all data in the table!</em></li>
+    </ul>
+
+    <h2>3. Managing Data (Records)</h2>
+    <ul>
+      <li><strong>View Records:</strong> Click on any table in the sidebar to view its data in a spreadsheet-like grid.</li>
+      <li><strong>Add Record:</strong> Click <strong>"Add Record"</strong> at the top right to insert a new row.</li>
+      <li><strong>Edit Record:</strong> Click the <strong>"Edit"</strong> button on any row to modify its contents.</li>
+      <li><strong>Delete Record:</strong> Click the <strong>"Delete"</strong> button on a row to remove it permanently.</li>
+    </ul>
+
+    <h2>4. User Management</h2>
+    <p>The <span class="highlight">User</span> table is built-in. You can view registered users, edit their roles, or delete users directly from the grid just like any other table.</p>
+
+    <div class="note">
+      <strong>Pro Tip:</strong> When setting up a table relation, ensure the parent table already exists!
+    </div>
+
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create New Table</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f7fafc; color: #1a202c; margin: 0; padding: 40px 20px; }
+    h1 { margin-top: 0; color: #2d3748; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #4a5568; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+    .btn { padding: 10px 20px; background-color: #3182ce; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 16px; }
+    .btn:hover { background-color: #2b6cb0; }
+    .btn-secondary { background-color: #e2e8f0; color: #4a5568; margin-right: 10px; text-decoration: none; display: inline-block; }
+    .btn-secondary:hover { background-color: #cbd5e0; }
+    .btn-add { background-color: #48bb78; padding: 6px 12px; font-size: 14px; margin-top: 10px; }
+    .btn-add:hover { background-color: #38a169; }
+    .column-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .remove-col { color: #e53e3e; cursor: pointer; font-weight: bold; background: none; border: none; font-size: 18px; }
+    .default-cols { background: #edf2f7; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #718096; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Create New Table</h1>
+    
+    <div class="form-group">
+      <label for="tableName">Table Name</label>
+      <input type="text" id="tableName" placeholder="e.g. books, cars, products">
+    </div>
+
+    <div class="default-cols">
+      <strong>Default Columns:</strong> id, userId, createdAt, updatedAt<br>
+      <span style="color: #4a5568; margin-top: 5px; display: inline-block;">
+        <strong>💡 Pro Tip:</strong> Select a Relation from the dropdown to automatically create a Foreign Key linking to another table!
+      </span><br>
+      <span style="color: #4a5568; margin-top: 5px; display: inline-block;">
+        <strong>🔑 Auth Tip:</strong> Name your table <code>User</code> to automatically configure it with username, encrypted password, and JWT endpoints.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>Custom Columns</label>
+      <div id="columns-container">
+        <!-- Rows will be injected here -->
+      </div>
+      <button type="button" class="btn btn-add" onclick="addColumn()">+ Add Another Column</button>
+    </div>
+
+    <div style="margin-top: 30px;">
+      <a href="/admin" class="btn btn-secondary">Cancel</a>
+      <button class="btn" onclick="submitTable()">Create Table</button>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      window.location.href = '/admin-login';
+    }
+
+    let existingTables = [];
+
+    async function fetchTables() {
+      const res = await fetch('/admin-api/tables', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        existingTables = await res.json();
+      }
+      // Add initial row after fetching tables
+      addColumn();
+    }
+
+    function generateTypeOptions() {
+      let optionsHtml = `
+        <optgroup label="Standard Types">
+          <option value="VARCHAR">String (Short Text)</option>
+          <option value="TEXT">Textarea (Long Text)</option>
+          <option value="INTEGER">Integer (Whole Number)</option>
+          <option value="REAL">Decimal (Float)</option>
+          <option value="BOOLEAN">Boolean (True/False)</option>
+          <option value="DATETIME">Date & Time</option>
+        </optgroup>
+      `;
+
+      if (existingTables.length > 0) {
+        optionsHtml += `<optgroup label="Relations">`;
+        existingTables.forEach(t => {
+          optionsHtml += `<option value="RELATION:${t}">Relation -> ${t}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
+      }
+
+      return optionsHtml;
+    }
+
+    function addColumn() {
+      const container = document.getElementById('columns-container');
+      const row = document.createElement('div');
+      row.className = 'column-row';
+      row.innerHTML = `
+        <input type="text" class="col-input" placeholder="Column name" style="flex: 2;">
+        <select class="col-type" style="flex: 1;">
+          ${generateTypeOptions()}
+        </select>
+        <button type="button" class="remove-col" onclick="this.parentElement.remove()" title="Remove column">&times;</button>
+      `;
+      container.appendChild(row);
+    }
+
+    async function submitTable() {
+      const name = document.getElementById('tableName').value.trim();
+      if (!name) {
+        alert("Please enter a table name");
+        return;
+      }
+      
+      if (name.toLowerCase() === 'user') {
+        if (!confirm("Creating a table named 'User' will automatically set it up with username, password encryption, and JWT token authentication. Do you want to proceed?")) {
+          return;
+        }
+      }
+
+      const rows = document.querySelectorAll('.column-row');
+      const columns = [];
+      rows.forEach(row => {
+        const val = row.querySelector('.col-input').value.trim();
+        const type = row.querySelector('.col-type').value;
+        if (val) columns.push({ name: val, type });
+      });
+
+      const res = await fetch('/admin-api/tables', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, columns })
+      });
+
+      if (res.ok) {
+        alert('Table created successfully!');
+        window.location.href = '/admin';
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    // Initialize
+    fetchTables();
+  </script>
+</body>
+</html>

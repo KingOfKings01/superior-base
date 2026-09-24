@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database Relations Guide</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f7fb; color: #333; line-height: 1.6; margin: 0; padding: 40px 20px; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    h1 { color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-top: 0; }
+    h2 { color: #2563eb; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    p, li { font-size: 16px; color: #4b5563; }
+    ul, ol { padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    strong { color: #111827; }
+    
+    .btn { display: inline-block; padding: 12px 20px; background: #5a67d8; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 30px; }
+    .btn:hover { background: #434ce6; }
+    .btn-secondary { background: #16a34a; margin-left: 10px; }
+    .btn-secondary:hover { background: #15803d; }
+    
+    .highlight { background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #dc2626; }
+    .note { background: #fff7ed; border-left: 4px solid #f97316; padding: 12px; margin-top: 20px; border-radius: 0 4px 4px 0; }
+    hr { border: 0; height: 1px; background: #e5e7eb; margin: 30px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Guide: How to Create Database Relations</h1>
+    <p>You built a powerful relational system! Because the Admin Panel natively understands SQLite Foreign Keys, you can model <strong>any</strong> type of database relationship (One-to-One, One-to-Many, Many-to-Many) using just the Admin UI. No code required!</p>
+    
+    <p>Here is the easy logic for how to create them.</p>
+
+    <hr>
+
+    <h2>1. One-to-Many (hasMany)</h2>
+    <p><em>A classic example: One <strong>User</strong> can have many <strong>Posts</strong>.</em></p>
+    <p>This is the most common relationship and the easiest to create.</p>
+
+    <p><strong>How to create it:</strong></p>
+    <ol>
+      <li>You already have a <code>User</code> table.</li>
+      <li>Go to <strong>Create New Table</strong> and create the <code>posts</code> table.</li>
+      <li>Add a column named <code>author</code> (or <code>user</code>).</li>
+      <li>In the Column Type dropdown, select <code>Relation -> User</code>.</li>
+    </ol>
+
+    <p><strong>Result:</strong> When you go to the <code>posts</code> table in the Admin Panel and add a row, it will give you a dropdown of all Users. One user can be selected for many different posts!</p>
+
+    <hr>
+
+    <h2>2. One-to-One (hasOne)</h2>
+    <p><em>Example: One <strong>User</strong> has one <strong>Profile</strong>.</em></p>
+    <p>A One-to-One relation is created using the exact same logic as a One-to-Many relation. The only difference is how you conceptually use it—you just don't assign the same User to multiple Profiles!</p>
+
+    <p><strong>How to create it:</strong></p>
+    <ol>
+      <li>Go to <strong>Create New Table</strong> and create a <code>profiles</code> table.</li>
+      <li>Add a column named <code>owner</code> (or <code>user</code>).</li>
+      <li>In the Column Type dropdown, select <code>Relation -> User</code>.</li>
+    </ol>
+
+    <p><strong>Result:</strong> When creating a Profile, you select the User it belongs to from the dropdown.</p>
+
+    <hr>
+
+    <h2>3. Many-to-Many</h2>
+    <p><em>Example: Many <strong>Students</strong> can enroll in many <strong>Courses</strong>.</em></p>
+    <p>Many-to-Many requires a <strong>third table</strong> (often called a "Junction" or "Join" table) to connect the two main tables together.</p>
+
+    <p><strong>How to create it:</strong></p>
+    <ol>
+      <li>Create your two main tables:
+        <ul>
+          <li>Create a <code>students</code> table.</li>
+          <li>Create a <code>courses</code> table.</li>
+        </ul>
+      </li>
+      <li>Create the Junction Table:
+        <ul>
+          <li>Go to <strong>Create New Table</strong> and name it <code>student_enrollments</code>.</li>
+          <li>Add a column named <code>student</code> and select <strong>Type</strong>: <code>Relation -> students</code>.</li>
+          <li>Add a column named <code>course</code> and select <strong>Type</strong>: <code>Relation -> courses</code>.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p><strong>Result:</strong> When you go to the <code>student_enrollments</code> table in the Admin Panel and click "Add Row", you will magically get <strong>two dropdowns</strong>: one to select the Student, and one to select the Course. This allows you to infinitely link students and courses together!</p>
+
+    <div class="note">
+      <strong>💡 Django Similarities</strong><br>
+      If you are used to Django, this is exactly how Django handles relations under the hood. Django creates join tables for Many-to-Many relationships automatically, but structurally, it is identical to what you just built!
+    </div>
+
+
+  </div>
+</body>
+</html>
